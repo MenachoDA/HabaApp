@@ -1,6 +1,6 @@
 {
   "name": "Haba",
-  "version": "1.0.2",
+  "version": "1.4.0",
   "main": "index.ts",
   "dependencies": {
     "@expo/metro-config": "^57.0.12",

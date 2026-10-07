@@ -9,7 +9,7 @@ interface Props {
 
 export const BarChart: React.FC<Props> = ({ data }) => {
     const { colors } = useTheme();
-    const maxVal = Math.max(...Object.values(data), 1); // Avoid division by zero
+    const maxVal = Math.max(...Object.values(data), 1);
 
     // Generar últimos 7 días con datos
     const days = Object.keys(data).slice(-7);

@@ -30,19 +30,11 @@ export const DashboardScreen: React.FC = () => {
                 {currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)}
             </Text>
 
-            <View style={styles.summaryRow}>
-                <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Gasto Total</Text>
-                    <Text style={[styles.summaryValue, { color: colors.textMain }]}>S/{totalExpense.toFixed(2)}</Text>
-                </View>
-                <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-                    <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Mayor Gasto</Text>
-                    <Text style={[styles.summaryValue, { color: colors.textMain, fontSize: 18 }]}>{topCategory}</Text>
-                </View>
-            </View>
-
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Gasto por Día</Text>
+                <View style={styles.headersummary}>
+                    <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Gasto por Día</Text>
+                    <Text style={[styles.summaryValue, { color: colors.textMain }]}>Gasto Total: S/{totalExpense.toFixed(2)}</Text>
+                </View>
                 <BarChart data={expensesByDay} />
             </View>
 
@@ -66,6 +58,12 @@ export const DashboardScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+
+    headersummary: {
+        flexDirection: 'row',          // Coloca los elementos uno al lado del otro
+        justifyContent: 'space-between', // Empuja uno a la izquierda y otro a la derecha        // Los alinea verticalmente al centro
+        marginBottom: 12,              // Da un pequeño espacio antes de que empiece el gráfico
+    },
     container: {
         flex: 1,
         padding: 16,
@@ -77,28 +75,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 24,
     },
-    summaryRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    summaryCard: {
-        flex: 1,
-        padding: 16,
-        borderRadius: 16,
-        marginHorizontal: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    summaryLabel: {
-        fontSize: 12,
-        marginBottom: 8,
-    },
     summaryValue: {
-        fontSize: 24,
+        fontSize: 12,
         fontWeight: 'bold',
     },
     card: {
