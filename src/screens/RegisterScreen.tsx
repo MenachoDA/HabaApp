@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { EXPENSE_CATEGORIES, EXPENSE_SOURCES, INCOME_ORIGINS } from '../domain/models';
@@ -65,15 +65,23 @@ export const RegisterScreen: React.FC = () => {
                         >
                             <Text style={styles.chipTitle}>Origen: {incomeOrigin}</Text>
                             {isIncomeOriginExpanded && (
-                                <View style={styles.accordionContent}>
+                                <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
                                     {INCOME_ORIGINS.map(o => (
-                                        <TouchableOpacity key={o} onPress={() => { setIncomeOrigin(o); setIsIncomeOriginExpanded(false); }}>
+                                        <TouchableOpacity key={o} style={styles.accordionItem} onPress={() => { setIncomeOrigin(o); setIsIncomeOriginExpanded(false); }}>
                                             <Text style={[styles.chipText, incomeOrigin === o && { color: colors.success, fontWeight: 'bold' }]}>{o}</Text>
                                         </TouchableOpacity>
                                     ))}
-                                </View>
+                                </ScrollView>
                             )}
                         </TouchableOpacity>
+                        <View style={[styles.addButtom]}>
+                            <View style={{ alignItems: 'flex-end', flex: 1 }}>
+                                <TouchableOpacity>
+                                    <Text style={[styles.chipText]}>Editar origenes</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
 
                         <TextInput
                             style={[styles.descInput, { borderColor: colors.success }]}
@@ -111,13 +119,13 @@ export const RegisterScreen: React.FC = () => {
                                 >
                                     <Text style={styles.chipTitle}>Categoría: {expenseCategory}</Text>
                                     {isExpenseCategoryExpanded && (
-                                        <View style={styles.accordionContent}>
+                                        <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
                                             {EXPENSE_CATEGORIES.map(c => (
-                                                <TouchableOpacity key={c} onPress={() => { setExpenseCategory(c); setIsExpenseCategoryExpanded(false); }}>
+                                                <TouchableOpacity key={c} style={styles.accordionItem} onPress={() => { setExpenseCategory(c); setIsExpenseCategoryExpanded(false); }}>
                                                     <Text style={[styles.chipText, expenseCategory === c && { color: colors.primary, fontWeight: 'bold' }]}>{c}</Text>
                                                 </TouchableOpacity>
                                             ))}
-                                        </View>
+                                        </ScrollView>
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -129,16 +137,29 @@ export const RegisterScreen: React.FC = () => {
                                 >
                                     <Text style={styles.chipTitle}>Fuente: {expenseSource}</Text>
                                     {isExpenseSourceExpanded && (
-                                        <View style={styles.accordionContent}>
+                                        <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
                                             {EXPENSE_SOURCES.map(s => (
-                                                <TouchableOpacity key={s} onPress={() => { setExpenseSource(s); setIsExpenseSourceExpanded(false); }}>
+                                                <TouchableOpacity key={s} style={styles.accordionItem} onPress={() => { setExpenseSource(s); setIsExpenseSourceExpanded(false); }}>
                                                     <Text style={[styles.chipText, expenseSource === s && { color: colors.primary, fontWeight: 'bold' }]}>{s}</Text>
                                                 </TouchableOpacity>
                                             ))}
-                                        </View>
+                                        </ScrollView>
                                     )}
                                 </TouchableOpacity>
                             </View>
+                        </View>
+                        <View style={[styles.addButtom]}>
+                            <View>
+                                <TouchableOpacity>
+                                    <Text style={[styles.chipText]}>Agregar Categoria</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                <TouchableOpacity>
+                                    <Text style={[styles.chipText]}>Agregar Fuente</Text>
+                                </TouchableOpacity>
+                            </View>
+
                         </View>
 
                         <TextInput
@@ -159,6 +180,11 @@ export const RegisterScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+    addButtom: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start'
+
+    },
     container: {
         flex: 1,
         padding: 40,
@@ -167,7 +193,7 @@ const styles = StyleSheet.create({
     incomeContainer: {},
     expenseContainer: {
         flex: 1,
-        paddingTop: 55,
+        paddingTop: 20,
         justifyContent: 'flex-start'
 
 
@@ -211,7 +237,7 @@ const styles = StyleSheet.create({
     chipContainer: {
         borderWidth: 1,
         borderRadius: 12,
-        padding: 10,
+        padding: 7,
         alignItems: 'center',
         marginBottom: 12,
     },
@@ -220,11 +246,17 @@ const styles = StyleSheet.create({
         fontSize: 13,
         textAlign: 'center',
     },
-    accordionContent: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        marginTop: 8,
+    accordionScroll: {
+        marginTop: 4,
+        maxHeight: 120,
+        width: '100%',
+    },
+    accordionItem: {
+        paddingVertical: 4,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E5E7EB',
+        width: '100%',
+        alignItems: 'center',
     },
     chipText: {
         marginHorizontal: 4,
