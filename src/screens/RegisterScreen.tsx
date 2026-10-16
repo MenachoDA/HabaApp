@@ -1,26 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
-import { EXPENSE_CATEGORIES, EXPENSE_SOURCES, INCOME_ORIGINS } from '../domain/models';
+import { ManageItemsModal } from '../components/ManageItemsModal';
 
 export const RegisterScreen: React.FC = () => {
     const { colors } = useTheme();
-    const { addTransaction } = useFinance();
+    const {
+        addTransaction,
+        categories,
+        sources,
+        origins,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        addSource,
+        updateSource,
+        deleteSource,
+        addOrigin,
+        updateOrigin,
+        deleteOrigin,
+    } = useFinance();
 
-    // Income State
+    // Ingresos State
     const [incomeAmount, setIncomeAmount] = useState('');
-    const [incomeOrigin, setIncomeOrigin] = useState(INCOME_ORIGINS[0]);
+    const [incomeOrigin, setIncomeOrigin] = useState(origins[0] || 'Trabajo');
     const [incomeDesc, setIncomeDesc] = useState('');
     const [isIncomeOriginExpanded, setIsIncomeOriginExpanded] = useState(false);
 
-    // Expense State
+    // Gastos State
     const [expenseAmount, setExpenseAmount] = useState('');
-    const [expenseCategory, setExpenseCategory] = useState(EXPENSE_CATEGORIES[0]);
-    const [expenseSource, setExpenseSource] = useState(EXPENSE_SOURCES[0]);
+    const [expenseCategory, setExpenseCategory] = useState(categories[0] || 'Comida');
+    const [expenseSource, setExpenseSource] = useState(sources[0] || 'Débito');
     const [expenseDesc, setExpenseDesc] = useState('');
     const [isExpenseCategoryExpanded, setIsExpenseCategoryExpanded] = useState(false);
     const [isExpenseSourceExpanded, setIsExpenseSourceExpanded] = useState(false);
+
+    // Modal State
+    const [modalType, setModalType] = useState<'origin' | 'category' | 'source' | null>(null);
+
+    // Mantener los valores seleccionados válidos si se eliminan u omiten elementos
+    useEffect(() => {
+        if (origins.length > 0 && !origins.includes(incomeOrigin)) {
+            setIncomeOrigin(origins[0]);
+        }
+    }, [origins, incomeOrigin]);
+
+    useEffect(() => {
+        if (categories.length > 0 && !categories.includes(expenseCategory)) {
+            setExpenseCategory(categories[0]);
+        }
+    }, [categories, expenseCategory]);
+
+    useEffect(() => {
+        if (sources.length > 0 && !sources.includes(expenseSource)) {
+            setExpenseSource(sources[0]);
+        }
+    }, [sources, expenseSource]);
 
     const handleRegisterIncome = () => {
         const amt = parseFloat(incomeAmount);
@@ -66,7 +102,7 @@ export const RegisterScreen: React.FC = () => {
                             <Text style={styles.chipTitle}>Origen: {incomeOrigin}</Text>
                             {isIncomeOriginExpanded && (
                                 <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
-                                    {INCOME_ORIGINS.map(o => (
+                                    {origins.map(o => (
                                         <TouchableOpacity key={o} style={styles.accordionItem} onPress={() => { setIncomeOrigin(o); setIsIncomeOriginExpanded(false); }}>
                                             <Text style={[styles.chipText, incomeOrigin === o && { color: colors.success, fontWeight: 'bold' }]}>{o}</Text>
                                         </TouchableOpacity>
@@ -76,8 +112,8 @@ export const RegisterScreen: React.FC = () => {
                         </TouchableOpacity>
                         <View style={[styles.addButtom]}>
                             <View style={{ alignItems: 'flex-end', flex: 1 }}>
-                                <TouchableOpacity>
-                                    <Text style={[styles.chipText]}>Editar origenes</Text>
+                                <TouchableOpacity onPress={() => setModalType('origin')}>
+                                    <Text style={[styles.chipText, { color: colors.success, fontWeight: '600' }]}>Editar orígenes</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -120,7 +156,7 @@ export const RegisterScreen: React.FC = () => {
                                     <Text style={styles.chipTitle}>Categoría: {expenseCategory}</Text>
                                     {isExpenseCategoryExpanded && (
                                         <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
-                                            {EXPENSE_CATEGORIES.map(c => (
+                                            {categories.map(c => (
                                                 <TouchableOpacity key={c} style={styles.accordionItem} onPress={() => { setExpenseCategory(c); setIsExpenseCategoryExpanded(false); }}>
                                                     <Text style={[styles.chipText, expenseCategory === c && { color: colors.primary, fontWeight: 'bold' }]}>{c}</Text>
                                                 </TouchableOpacity>
@@ -138,7 +174,7 @@ export const RegisterScreen: React.FC = () => {
                                     <Text style={styles.chipTitle}>Fuente: {expenseSource}</Text>
                                     {isExpenseSourceExpanded && (
                                         <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
-                                            {EXPENSE_SOURCES.map(s => (
+                                            {sources.map(s => (
                                                 <TouchableOpacity key={s} style={styles.accordionItem} onPress={() => { setExpenseSource(s); setIsExpenseSourceExpanded(false); }}>
                                                     <Text style={[styles.chipText, expenseSource === s && { color: colors.primary, fontWeight: 'bold' }]}>{s}</Text>
                                                 </TouchableOpacity>
@@ -149,17 +185,16 @@ export const RegisterScreen: React.FC = () => {
                             </View>
                         </View>
                         <View style={[styles.addButtom]}>
-                            <View>
-                                <TouchableOpacity>
-                                    <Text style={[styles.chipText]}>Agregar Categoria</Text>
+                            <View style={{ flex: 1, marginRight: 4, alignItems: 'flex-start' }}>
+                                <TouchableOpacity onPress={() => setModalType('category')}>
+                                    <Text style={[styles.chipText, { color: colors.primary, fontWeight: '600' }]}>Editar categorías</Text>
                                 </TouchableOpacity>
                             </View>
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <TouchableOpacity>
-                                    <Text style={[styles.chipText]}>Agregar Fuente</Text>
+                            <View style={{ flex: 1, marginLeft: 4, alignItems: 'flex-start' }}>
+                                <TouchableOpacity onPress={() => setModalType('source')}>
+                                    <Text style={[styles.chipText, { color: colors.primary, fontWeight: '600' }]}>Editar fuentes</Text>
                                 </TouchableOpacity>
                             </View>
-
                         </View>
 
                         <TextInput
@@ -174,6 +209,72 @@ export const RegisterScreen: React.FC = () => {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* Modal para Editar/Agregar/Eliminar Orígenes de Ingreso */}
+                <ManageItemsModal
+                    visible={modalType === 'origin'}
+                    onClose={() => setModalType(null)}
+                    title="Gestionar Orígenes"
+                    itemTypeLabel="origen"
+                    items={origins}
+                    accentColor={colors.success}
+                    onAddItem={addOrigin}
+                    onEditItem={async (oldName, newName) => {
+                        await updateOrigin(oldName, newName);
+                        if (incomeOrigin === oldName) setIncomeOrigin(newName);
+                    }}
+                    onDeleteItem={async (name) => {
+                        await deleteOrigin(name);
+                        if (incomeOrigin === name) {
+                            const remaining = origins.filter(o => o !== name);
+                            if (remaining.length > 0) setIncomeOrigin(remaining[0]);
+                        }
+                    }}
+                />
+
+                {/* Modal para Editar/Agregar/Eliminar Categorías de Gasto */}
+                <ManageItemsModal
+                    visible={modalType === 'category'}
+                    onClose={() => setModalType(null)}
+                    title="Gestionar Categorías"
+                    itemTypeLabel="categoría"
+                    items={categories}
+                    accentColor={colors.primary}
+                    onAddItem={addCategory}
+                    onEditItem={async (oldName, newName) => {
+                        await updateCategory(oldName, newName);
+                        if (expenseCategory === oldName) setExpenseCategory(newName);
+                    }}
+                    onDeleteItem={async (name) => {
+                        await deleteCategory(name);
+                        if (expenseCategory === name) {
+                            const remaining = categories.filter(c => c !== name);
+                            if (remaining.length > 0) setExpenseCategory(remaining[0]);
+                        }
+                    }}
+                />
+
+                {/* Modal para Editar/Agregar/Eliminar Fuentes de Pago */}
+                <ManageItemsModal
+                    visible={modalType === 'source'}
+                    onClose={() => setModalType(null)}
+                    title="Gestionar Fuentes de Pago"
+                    itemTypeLabel="fuente"
+                    items={sources}
+                    accentColor={colors.primary}
+                    onAddItem={addSource}
+                    onEditItem={async (oldName, newName) => {
+                        await updateSource(oldName, newName);
+                        if (expenseSource === oldName) setExpenseSource(newName);
+                    }}
+                    onDeleteItem={async (name) => {
+                        await deleteSource(name);
+                        if (expenseSource === name) {
+                            const remaining = sources.filter(s => s !== name);
+                            if (remaining.length > 0) setExpenseSource(remaining[0]);
+                        }
+                    }}
+                />
             </View>
         </KeyboardAvoidingView>
     );
@@ -182,8 +283,8 @@ export const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
     addButtom: {
         flexDirection: 'row',
-        justifyContent: 'flex-start'
-
+        justifyContent: 'flex-start',
+        marginBottom: 8,
     },
     container: {
         flex: 1,
