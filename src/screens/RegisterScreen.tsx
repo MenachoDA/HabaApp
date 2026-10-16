@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     incomeContainer: {},
     expenseContainer: {
         flex: 1,
-        paddingTop: 20,
+        paddingTop: 5,
         justifyContent: 'flex-start'
 
 

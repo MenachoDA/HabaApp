@@ -14,14 +14,37 @@ export const BarChart: React.FC<Props> = ({ data }) => {
     // Generar últimos 7 días con datos
     const days = Object.keys(data).slice(-7);
 
+    const formatAmount = (val: number): string => {
+        // Máximo 2 decimales
+        return Number(val.toFixed(2)).toString();
+    };
+
     return (
         <View style={styles.container}>
-            <View style={styles.chartArea}>
+            <View style={[styles.chartArea, { borderBottomColor: colors.border }]}>
                 {days.map(day => {
-                    const heightPercent = (data[day] / maxVal) * 100;
+                    const amount = data[day] || 0;
+                    const heightPercent = maxVal > 0 ? (amount / maxVal) * 80 : 0;
                     return (
                         <View key={day} style={styles.barContainer}>
-                            <View style={[styles.bar, { height: `${heightPercent}%`, backgroundColor: colors.primary }]} />
+                            <View style={styles.barWrapper}>
+                                <Text
+                                    style={[styles.valueText, { color: colors.textSecondary }]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                >
+                                    {formatAmount(amount)}
+                                </Text>
+                                <View
+                                    style={[
+                                        styles.bar,
+                                        {
+                                            height: `${heightPercent}%`,
+                                            backgroundColor: colors.primary,
+                                        },
+                                    ]}
+                                />
+                            </View>
                             <Text style={[styles.label, { color: colors.textSecondary }]}>{day}</Text>
                         </View>
                     );
@@ -43,19 +66,30 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         justifyContent: 'space-around',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
         paddingBottom: 8,
     },
     barContainer: {
         alignItems: 'center',
-        width: 30,
+        width: 38,
         height: '100%',
         justifyContent: 'flex-end',
     },
+    barWrapper: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+    },
     bar: {
-        width: 24,
+        width: 22,
         borderRadius: 6,
         minHeight: 4,
+    },
+    valueText: {
+        fontSize: 9,
+        fontWeight: '600',
+        marginBottom: 4,
+        textAlign: 'center',
     },
     label: {
         fontSize: 10,
