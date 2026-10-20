@@ -1,11 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Animated,
+    useWindowDimensions,
+    NativeSyntheticEvent,
+    NativeScrollEvent
+} from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { ManageItemsModal } from '../components/ManageItemsModal';
 
 export const RegisterScreen: React.FC = () => {
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
+
+    // Dimensiones responsivas para que la tarjeta activa quede exactamente centrada
+    // y la tarjeta contigua asome visiblemente por el borde (~38px) indicando su existencia.
+    const CARD_WIDTH = Math.min(320, Math.round(windowWidth * 0.68));
+    const CARD_SPACING = 12;
+    const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
+    const SIDE_SPACER = Math.max(0, (windowWidth - CARD_WIDTH) / 2);
+
+    const scrollViewRef = useRef<any>(null);
+    const scrollX = useRef(new Animated.Value(0)).current;
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const scrollToIndex = (index: number) => {
+        scrollViewRef.current?.scrollTo({ x: index * SNAP_INTERVAL, animated: true });
+        setActiveIndex(index);
+    };
+
+    const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const offset = e.nativeEvent.contentOffset.x;
+        const index = Math.round(offset / SNAP_INTERVAL);
+        if ((index === 0 || index === 1) && index !== activeIndex) {
+            setActiveIndex(index);
+        }
+    };
+
+    // Interpolaciones de escala y opacidad según el desplazamiento horizontal
+    // La tarjeta centrada se muestra en escala completa (1.0) y la otra ligeramente más pequeña (0.90)
+    const card0Scale = scrollX.interpolate({
+        inputRange: [-SNAP_INTERVAL, 0, SNAP_INTERVAL],
+        outputRange: [0.90, 1, 0.90],
+        extrapolate: 'clamp',
+    });
+
+    const card0Opacity = scrollX.interpolate({
+        inputRange: [-SNAP_INTERVAL, 0, SNAP_INTERVAL],
+        outputRange: [0.78, 1, 0.78],
+        extrapolate: 'clamp',
+    });
+
+    const card1Scale = scrollX.interpolate({
+        inputRange: [0, SNAP_INTERVAL, SNAP_INTERVAL * 2],
+        outputRange: [0.90, 1, 0.90],
+        extrapolate: 'clamp',
+    });
+
+    const card1Opacity = scrollX.interpolate({
+        inputRange: [0, SNAP_INTERVAL, SNAP_INTERVAL * 2],
+        outputRange: [0.78, 1, 0.78],
+        extrapolate: 'clamp',
+    });
+
     const {
         addTransaction,
         categories,
@@ -79,135 +144,200 @@ export const RegisterScreen: React.FC = () => {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
             <View style={[styles.container, { backgroundColor: colors.background }]}>
 
-                {/* Tarjeta Ingreso */}
-                <View style={[styles.incomeContainer]}>
-                    <View style={[styles.card, { borderColor: colors.success, backgroundColor: colors.surface }]}>
-                        <Text style={[styles.title, { color: colors.success }]}>Ingreso</Text>
+                {/* Carrusel de Tarjetas Centrado */}
+                <View style={styles.carouselWrapper}>
+                    <Animated.ScrollView
+                        ref={scrollViewRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        snapToInterval={SNAP_INTERVAL}
+                        snapToOffsets={[0, SNAP_INTERVAL]}
+                        snapToAlignment="start"
+                        decelerationRate="fast"
+                        disableIntervalMomentum={true}
+                        bounces={false}
+                        onScroll={Animated.event(
+                            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                            { useNativeDriver: true }
+                        )}
+                        scrollEventThrottle={16}
+                        onMomentumScrollEnd={handleScrollEnd}
+                        onScrollEndDrag={handleScrollEnd}
+                        contentContainerStyle={[
+                            styles.carouselContent,
+                            { paddingHorizontal: SIDE_SPACER }
+                        ]}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {/* Slide 1: Tarjeta Gasto */}
+                        <View style={[styles.cardSlide, { width: CARD_WIDTH, marginRight: CARD_SPACING }]}>
+                            <Animated.View
+                                style={[
+                                    styles.card,
+                                    {
+                                        borderColor: colors.primary,
+                                        backgroundColor: colors.surface,
+                                        transform: [{ scale: card0Scale }],
+                                        opacity: card0Opacity,
+                                    }
+                                ]}
+                            >
+                                <Text style={[styles.title, { color: colors.primary }]}>Registrar Gasto</Text>
 
-                        <View style={[styles.inputContainer, { borderColor: colors.success }]}>
-                            <Text style={styles.currencyPrefix}>S/</Text>
-                            <TextInput
-                                style={styles.amountInput}
-                                keyboardType="decimal-pad"
-                                placeholder="0.00"
-                                value={incomeAmount}
-                                onChangeText={setIncomeAmount}
-                            />
-                        </View>
+                                <View style={[styles.inputContainer, { borderColor: colors.primary }]}>
+                                    <Text style={styles.currencyPrefix}>S/</Text>
+                                    <TextInput
+                                        style={styles.amountInput}
+                                        keyboardType="decimal-pad"
+                                        placeholder="0.00"
+                                        value={expenseAmount}
+                                        onChangeText={setExpenseAmount}
+                                    />
+                                </View>
 
-                        <TouchableOpacity
-                            style={[styles.chipContainer, { borderColor: colors.success }]}
-                            onPress={() => setIsIncomeOriginExpanded(!isIncomeOriginExpanded)}
-                        >
-                            <Text style={styles.chipTitle}>Origen: {incomeOrigin}</Text>
-                            {isIncomeOriginExpanded && (
-                                <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
-                                    {origins.map(o => (
-                                        <TouchableOpacity key={o} style={styles.accordionItem} onPress={() => { setIncomeOrigin(o); setIsIncomeOriginExpanded(false); }}>
-                                            <Text style={[styles.chipText, incomeOrigin === o && { color: colors.success, fontWeight: 'bold' }]}>{o}</Text>
+                                <View style={styles.row}>
+                                    <View style={{ flex: 1, marginRight: 4 }}>
+                                        <TouchableOpacity
+                                            style={[styles.chipContainer, { borderColor: colors.primary }]}
+                                            onPress={() => setIsExpenseCategoryExpanded(!isExpenseCategoryExpanded)}
+                                        >
+                                            <Text style={styles.chipTitle}>Categoría: {expenseCategory}</Text>
+                                            {isExpenseCategoryExpanded && (
+                                                <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
+                                                    {categories.map(c => (
+                                                        <TouchableOpacity key={c} style={styles.accordionItem} onPress={() => { setExpenseCategory(c); setIsExpenseCategoryExpanded(false); }}>
+                                                            <Text style={[styles.chipText, expenseCategory === c && { color: colors.primary, fontWeight: 'bold' }]}>{c}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            )}
                                         </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            )}
-                        </TouchableOpacity>
-                        <View style={[styles.addButtom]}>
-                            <View style={{ alignItems: 'flex-end', flex: 1 }}>
-                                <TouchableOpacity onPress={() => setModalType('origin')}>
-                                    <Text style={[styles.chipText, { color: colors.success, fontWeight: '600' }]}>Editar orígenes</Text>
+                                    </View>
+
+                                    <View style={{ flex: 1, marginLeft: 4 }}>
+                                        <TouchableOpacity
+                                            style={[styles.chipContainer, { borderColor: colors.primary }]}
+                                            onPress={() => setIsExpenseSourceExpanded(!isExpenseSourceExpanded)}
+                                        >
+                                            <Text style={styles.chipTitle}>Fuente: {expenseSource}</Text>
+                                            {isExpenseSourceExpanded && (
+                                                <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
+                                                    {sources.map(s => (
+                                                        <TouchableOpacity key={s} style={styles.accordionItem} onPress={() => { setExpenseSource(s); setIsExpenseSourceExpanded(false); }}>
+                                                            <Text style={[styles.chipText, expenseSource === s && { color: colors.primary, fontWeight: 'bold' }]}>{s}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                                <View style={styles.addButtom}>
+                                    <View style={{ flex: 1, marginRight: 4, alignItems: 'flex-start' }}>
+                                        <TouchableOpacity onPress={() => setModalType('category')}>
+                                            <Text style={[styles.chipText, { color: colors.primary, fontWeight: '600' }]}>Editar categorías</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ flex: 1, marginLeft: 4, alignItems: 'flex-start' }}>
+                                        <TouchableOpacity onPress={() => setModalType('source')}>
+                                            <Text style={[styles.chipText, { color: colors.primary, fontWeight: '600' }]}>Editar fuentes</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <TextInput
+                                    style={[styles.descInput, { borderColor: colors.primary }]}
+                                    placeholder="Descripción"
+                                    value={expenseDesc}
+                                    onChangeText={setExpenseDesc}
+                                />
+
+                                <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleRegisterExpense}>
+                                    <Text style={styles.buttonText}>Registrar</Text>
                                 </TouchableOpacity>
-                            </View>
+
+                                {/* Capa táctil cuando la tarjeta está inactiva para centrarla al tocarla */}
+                                {activeIndex !== 0 && (
+                                    <TouchableOpacity
+                                        style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                                        activeOpacity={0.8}
+                                        onPress={() => scrollToIndex(0)}
+                                    />
+                                )}
+                            </Animated.View>
                         </View>
 
+                        {/* Slide 2: Tarjeta Ingreso */}
+                        <View style={[styles.cardSlide, { width: CARD_WIDTH }]}>
+                            <Animated.View
+                                style={[
+                                    styles.card,
+                                    {
+                                        borderColor: colors.success,
+                                        backgroundColor: colors.surface,
+                                        transform: [{ scale: card1Scale }],
+                                        opacity: card1Opacity,
+                                    }
+                                ]}
+                            >
+                                <Text style={[styles.title, { color: colors.success }]}>Registrar Ingreso</Text>
 
-                        <TextInput
-                            style={[styles.descInput, { borderColor: colors.success }]}
-                            placeholder="Descripción"
-                            value={incomeDesc}
-                            onChangeText={setIncomeDesc}
-                        />
+                                <View style={[styles.inputContainer, { borderColor: colors.success }]}>
+                                    <Text style={styles.currencyPrefix}>S/</Text>
+                                    <TextInput
+                                        style={styles.amountInput}
+                                        keyboardType="decimal-pad"
+                                        placeholder="0.00"
+                                        value={incomeAmount}
+                                        onChangeText={setIncomeAmount}
+                                    />
+                                </View>
 
-                        <TouchableOpacity style={[styles.button, { backgroundColor: colors.success }]} onPress={handleRegisterIncome}>
-                            <Text style={styles.buttonText}>Registrar</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                {/* Tarjeta Gasto */}
-                <View style={[styles.expenseContainer]}>
-                    <View style={[styles.card, { borderColor: colors.primary, backgroundColor: colors.surface }]}>
-                        <Text style={[styles.title, { color: colors.primary }]}>Gasto</Text>
-
-                        <View style={[styles.inputContainer, { borderColor: colors.primary }]}>
-                            <Text style={styles.currencyPrefix}>S/</Text>
-                            <TextInput
-                                style={styles.amountInput}
-                                keyboardType="decimal-pad"
-                                placeholder="0.00"
-                                value={expenseAmount}
-                                onChangeText={setExpenseAmount}
-                            />
-                        </View>
-
-                        <View style={styles.row}>
-                            <View style={{ flex: 1, marginRight: 4 }}>
                                 <TouchableOpacity
-                                    style={[styles.chipContainer, { borderColor: colors.primary }]}
-                                    onPress={() => setIsExpenseCategoryExpanded(!isExpenseCategoryExpanded)}
+                                    style={[styles.chipContainer, { borderColor: colors.success }]}
+                                    onPress={() => setIsIncomeOriginExpanded(!isIncomeOriginExpanded)}
                                 >
-                                    <Text style={styles.chipTitle}>Categoría: {expenseCategory}</Text>
-                                    {isExpenseCategoryExpanded && (
+                                    <Text style={styles.chipTitle}>Origen: {incomeOrigin}</Text>
+                                    {isIncomeOriginExpanded && (
                                         <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
-                                            {categories.map(c => (
-                                                <TouchableOpacity key={c} style={styles.accordionItem} onPress={() => { setExpenseCategory(c); setIsExpenseCategoryExpanded(false); }}>
-                                                    <Text style={[styles.chipText, expenseCategory === c && { color: colors.primary, fontWeight: 'bold' }]}>{c}</Text>
+                                            {origins.map(o => (
+                                                <TouchableOpacity key={o} style={styles.accordionItem} onPress={() => { setIncomeOrigin(o); setIsIncomeOriginExpanded(false); }}>
+                                                    <Text style={[styles.chipText, incomeOrigin === o && { color: colors.success, fontWeight: 'bold' }]}>{o}</Text>
                                                 </TouchableOpacity>
                                             ))}
                                         </ScrollView>
                                     )}
                                 </TouchableOpacity>
-                            </View>
+                                <View style={styles.addButtom}>
+                                    <View style={{ alignItems: 'flex-end', flex: 1 }}>
+                                        <TouchableOpacity onPress={() => setModalType('origin')}>
+                                            <Text style={[styles.chipText, { color: colors.success, fontWeight: '600' }]}>Editar orígenes</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
 
-                            <View style={{ flex: 1, marginLeft: 4 }}>
-                                <TouchableOpacity
-                                    style={[styles.chipContainer, { borderColor: colors.primary }]}
-                                    onPress={() => setIsExpenseSourceExpanded(!isExpenseSourceExpanded)}
-                                >
-                                    <Text style={styles.chipTitle}>Fuente: {expenseSource}</Text>
-                                    {isExpenseSourceExpanded && (
-                                        <ScrollView style={styles.accordionScroll} nestedScrollEnabled={true}>
-                                            {sources.map(s => (
-                                                <TouchableOpacity key={s} style={styles.accordionItem} onPress={() => { setExpenseSource(s); setIsExpenseSourceExpanded(false); }}>
-                                                    <Text style={[styles.chipText, expenseSource === s && { color: colors.primary, fontWeight: 'bold' }]}>{s}</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
-                                    )}
+                                <TextInput
+                                    style={[styles.descInput, { borderColor: colors.success }]}
+                                    placeholder="Descripción"
+                                    value={incomeDesc}
+                                    onChangeText={setIncomeDesc}
+                                />
+
+                                <TouchableOpacity style={[styles.button, { backgroundColor: colors.success }]} onPress={handleRegisterIncome}>
+                                    <Text style={styles.buttonText}>Registrar</Text>
                                 </TouchableOpacity>
-                            </View>
+
+                                {/* Capa táctil cuando la tarjeta está inactiva para centrarla al tocarla */}
+                                {activeIndex !== 1 && (
+                                    <TouchableOpacity
+                                        style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                                        activeOpacity={0.8}
+                                        onPress={() => scrollToIndex(1)}
+                                    />
+                                )}
+                            </Animated.View>
                         </View>
-                        <View style={[styles.addButtom]}>
-                            <View style={{ flex: 1, marginRight: 4, alignItems: 'flex-start' }}>
-                                <TouchableOpacity onPress={() => setModalType('category')}>
-                                    <Text style={[styles.chipText, { color: colors.primary, fontWeight: '600' }]}>Editar categorías</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={{ flex: 1, marginLeft: 4, alignItems: 'flex-start' }}>
-                                <TouchableOpacity onPress={() => setModalType('source')}>
-                                    <Text style={[styles.chipText, { color: colors.primary, fontWeight: '600' }]}>Editar fuentes</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        <TextInput
-                            style={[styles.descInput, { borderColor: colors.primary }]}
-                            placeholder="Descripción"
-                            value={expenseDesc}
-                            onChangeText={setExpenseDesc}
-                        />
-
-                        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleRegisterExpense}>
-                            <Text style={styles.buttonText}>Registrar</Text>
-                        </TouchableOpacity>
-                    </View>
+                    </Animated.ScrollView>
                 </View>
 
                 {/* Modal para Editar/Agregar/Eliminar Orígenes de Ingreso */}
@@ -288,22 +418,24 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        padding: 40,
-        paddingTop: 80
+        paddingTop: 60,
+        justifyContent: 'center',
     },
-    incomeContainer: {},
-    expenseContainer: {
-        flex: 1,
-        paddingTop: 5,
-        justifyContent: 'flex-start'
-
-
+    carouselWrapper: {
+        width: '100%',
+        justifyContent: 'center',
+    },
+    carouselContent: {
+        alignItems: 'center',
+        paddingVertical: 16,
+    },
+    cardSlide: {
+        justifyContent: 'center',
     },
     card: {
         borderRadius: 16,
         borderWidth: 2,
         padding: 16,
-        marginBottom: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,

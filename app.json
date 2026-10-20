@@ -2,12 +2,13 @@
   "expo": {
     "name": "Haba",
     "slug": "HabaApp",
-    "version": "1.4.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.alvaromenacho.habamovil"
     },
     "android": {
       "adaptiveIcon": {
