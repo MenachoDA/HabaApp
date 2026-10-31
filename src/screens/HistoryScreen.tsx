@@ -22,6 +22,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onBack }) => {
     const {
         transactions,
         updateTransaction,
+        deleteTransaction,
         categories,
         sources,
         origins,
@@ -137,6 +138,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onBack }) => {
                 sources={sources}
                 origins={origins}
                 onSave={updateTransaction}
+                onDelete={deleteTransaction}
             />
         </View>
     );

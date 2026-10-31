@@ -25,6 +25,7 @@ interface TransactionDetailModalProps {
     sources: string[];
     origins: string[];
     onSave: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void> | void;
+    onDelete: (id: string) => Promise<void> | void;
 }
 
 type EditableField = 'amount' | 'category' | 'source' | 'datetime' | 'description' | null;
@@ -48,6 +49,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
     sources,
     origins,
     onSave,
+    onDelete,
 }) => {
     const { colors } = useTheme();
 
@@ -182,6 +184,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
             description: descVal.trim(),
         });
 
+        setEditingField(null);
+        onClose();
+    };
+
+    const handleDeleteAndClose = async () => {
+        await onDelete(transaction.id);
         setEditingField(null);
         onClose();
     };
@@ -571,14 +579,23 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                             )}
                         </ScrollView>
 
-                        {/* Botón Guardar */}
-                        <TouchableOpacity
-                            style={[styles.saveButton, { backgroundColor: accentColor }]}
-                            onPress={handleSaveAllAndClose}
-                            activeOpacity={0.85}
-                        >
-                            <Text style={styles.saveButtonText}>Guardar</Text>
-                        </TouchableOpacity>
+                        {/* Botones Guardar y Eliminar */}
+                        <View style={styles.footerButtonsRow}>
+                            <TouchableOpacity
+                                style={[styles.deleteButton, { backgroundColor: '#EF4444' }]}
+                                onPress={handleDeleteAndClose}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.saveButtonText}>Eliminar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.saveButton, { backgroundColor: accentColor }]}
+                                onPress={handleSaveAllAndClose}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.saveButtonText}>Guardar</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </KeyboardAvoidingView>
             </View>
@@ -752,8 +769,19 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         marginHorizontal: 2,
     },
-    saveButton: {
+    footerButtonsRow: {
+        flexDirection: 'row',
+        gap: 10,
         marginTop: 14,
+    },
+    deleteButton: {
+        flex: 1,
+        borderRadius: 14,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    saveButton: {
+        flex: 1,
         borderRadius: 14,
         paddingVertical: 12,
         alignItems: 'center',

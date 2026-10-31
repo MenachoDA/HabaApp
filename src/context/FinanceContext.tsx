@@ -8,6 +8,7 @@ interface FinanceContextProps {
     transactions: Transaction[];
     addTransaction: (tx: Omit<Transaction, 'id' | 'timestamp' | 'synced'>) => Promise<void>;
     updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
+    deleteTransaction: (id: string) => Promise<void>;
     isLoading: boolean;
     categories: string[];
     sources: string[];
@@ -68,6 +69,14 @@ export const FinanceProvider = ({ children }: { children: ReactNode }) => {
     const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
         setTransactions(prev => {
             const updated = prev.map(t => (t.id === id ? { ...t, ...updates } : t));
+            StorageRepository.saveTransactions(updated);
+            return updated;
+        });
+    }, []);
+
+    const deleteTransaction = useCallback(async (id: string) => {
+        setTransactions(prev => {
+            const updated = prev.filter(t => t.id !== id);
             StorageRepository.saveTransactions(updated);
             return updated;
         });
@@ -184,6 +193,7 @@ export const FinanceProvider = ({ children }: { children: ReactNode }) => {
                 transactions,
                 addTransaction,
                 updateTransaction,
+                deleteTransaction,
                 isLoading,
                 categories,
                 sources,
