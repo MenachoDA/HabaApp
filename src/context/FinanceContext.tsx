@@ -7,6 +7,7 @@ import { getLocalISOTime } from '../domain/utils';
 interface FinanceContextProps {
     transactions: Transaction[];
     addTransaction: (tx: Omit<Transaction, 'id' | 'timestamp' | 'synced'>) => Promise<void>;
+    updateTransaction: (id: string, updates: Partial<Omit<Transaction, 'id'>>) => Promise<void>;
     isLoading: boolean;
     categories: string[];
     sources: string[];
@@ -59,6 +60,14 @@ export const FinanceProvider = ({ children }: { children: ReactNode }) => {
 
         setTransactions(prev => {
             const updated = [newTx, ...prev];
+            StorageRepository.saveTransactions(updated);
+            return updated;
+        });
+    }, []);
+
+    const updateTransaction = useCallback(async (id: string, updates: Partial<Omit<Transaction, 'id'>>) => {
+        setTransactions(prev => {
+            const updated = prev.map(t => (t.id === id ? { ...t, ...updates } : t));
             StorageRepository.saveTransactions(updated);
             return updated;
         });
@@ -174,6 +183,7 @@ export const FinanceProvider = ({ children }: { children: ReactNode }) => {
             value={{
                 transactions,
                 addTransaction,
+                updateTransaction,
                 isLoading,
                 categories,
                 sources,

@@ -17,7 +17,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
 import { ManageItemsModal } from '../components/ManageItemsModal';
 
-export const RegisterScreen: React.FC = () => {
+interface RegisterScreenProps {
+    onOpenHistory?: () => void;
+}
+
+export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onOpenHistory }) => {
     const { colors } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
 
@@ -29,8 +33,11 @@ export const RegisterScreen: React.FC = () => {
     const SIDE_SPACER = Math.max(0, (windowWidth - CARD_WIDTH) / 2);
 
     const scrollViewRef = useRef<any>(null);
-    const scrollX = useRef(new Animated.Value(0)).current;
-    const [activeIndex, setActiveIndex] = useState(0);
+    const hasInitializedScroll = useRef(false);
+    // Inicia en el índice 1 (Tarjeta de Gastos centrada, con Historial a su izquierda e Ingresos a su derecha)
+    const scrollX = useRef(new Animated.Value(SNAP_INTERVAL)).current;
+    const [activeIndex, setActiveIndex] = useState(1);
+    const [expenseCardHeight, setExpenseCardHeight] = useState(300);
 
     const scrollToIndex = (index: number) => {
         scrollViewRef.current?.scrollTo({ x: index * SNAP_INTERVAL, animated: true });
@@ -40,13 +47,13 @@ export const RegisterScreen: React.FC = () => {
     const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
         const offset = e.nativeEvent.contentOffset.x;
         const index = Math.round(offset / SNAP_INTERVAL);
-        if ((index === 0 || index === 1) && index !== activeIndex) {
+        if ((index === 0 || index === 1 || index === 2) && index !== activeIndex) {
             setActiveIndex(index);
         }
     };
 
     // Interpolaciones de escala y opacidad según el desplazamiento horizontal
-    // La tarjeta centrada se muestra en escala completa (1.0) y la otra ligeramente más pequeña (0.90)
+    // La tarjeta centrada se muestra en escala completa (1.0) y las contiguas ligeramente más pequeñas (0.90)
     const card0Scale = scrollX.interpolate({
         inputRange: [-SNAP_INTERVAL, 0, SNAP_INTERVAL],
         outputRange: [0.90, 1, 0.90],
@@ -67,6 +74,18 @@ export const RegisterScreen: React.FC = () => {
 
     const card1Opacity = scrollX.interpolate({
         inputRange: [0, SNAP_INTERVAL, SNAP_INTERVAL * 2],
+        outputRange: [0.78, 1, 0.78],
+        extrapolate: 'clamp',
+    });
+
+    const card2Scale = scrollX.interpolate({
+        inputRange: [SNAP_INTERVAL, SNAP_INTERVAL * 2, SNAP_INTERVAL * 3],
+        outputRange: [0.90, 1, 0.90],
+        extrapolate: 'clamp',
+    });
+
+    const card2Opacity = scrollX.interpolate({
+        inputRange: [SNAP_INTERVAL, SNAP_INTERVAL * 2, SNAP_INTERVAL * 3],
         outputRange: [0.78, 1, 0.78],
         extrapolate: 'clamp',
     });
@@ -151,8 +170,15 @@ export const RegisterScreen: React.FC = () => {
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         snapToInterval={SNAP_INTERVAL}
-                        snapToOffsets={[0, SNAP_INTERVAL]}
+                        snapToOffsets={[0, SNAP_INTERVAL, SNAP_INTERVAL * 2]}
                         snapToAlignment="start"
+                        contentOffset={{ x: SNAP_INTERVAL, y: 0 }}
+                        onLayout={() => {
+                            if (!hasInitializedScroll.current) {
+                                hasInitializedScroll.current = true;
+                                scrollViewRef.current?.scrollTo({ x: SNAP_INTERVAL, animated: false });
+                            }
+                        }}
                         decelerationRate="fast"
                         disableIntervalMomentum={true}
                         bounces={false}
@@ -169,16 +195,44 @@ export const RegisterScreen: React.FC = () => {
                         ]}
                         keyboardShouldPersistTaps="handled"
                     >
-                        {/* Slide 1: Tarjeta Gasto */}
+                        {/* Slide 0 (Izquierda): Tarjeta Botón Historial */}
                         <View style={[styles.cardSlide, { width: CARD_WIDTH, marginRight: CARD_SPACING }]}>
                             <Animated.View
+                                style={[
+                                    styles.historyCard,
+                                    {
+                                        height: expenseCardHeight,
+                                        transform: [{ scale: card0Scale }],
+                                        opacity: card0Opacity,
+                                    }
+                                ]}
+                            >
+                                <TouchableOpacity
+                                    style={styles.historyCardTouchable}
+                                    activeOpacity={0.75}
+                                    onPress={onOpenHistory}
+                                >
+                                    <Text style={styles.historyCardTitle}>Historial</Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </View>
+
+                        {/* Slide 1 (Centro): Tarjeta Gasto */}
+                        <View style={[styles.cardSlide, { width: CARD_WIDTH, marginRight: CARD_SPACING }]}>
+                            <Animated.View
+                                onLayout={(e) => {
+                                    const h = e.nativeEvent.layout.height;
+                                    if (h > 0 && Math.abs(h - expenseCardHeight) > 2) {
+                                        setExpenseCardHeight(h);
+                                    }
+                                }}
                                 style={[
                                     styles.card,
                                     {
                                         borderColor: colors.primary,
                                         backgroundColor: colors.surface,
-                                        transform: [{ scale: card0Scale }],
-                                        opacity: card0Opacity,
+                                        transform: [{ scale: card1Scale }],
+                                        opacity: card1Opacity,
                                     }
                                 ]}
                             >
@@ -257,11 +311,11 @@ export const RegisterScreen: React.FC = () => {
                                 </TouchableOpacity>
 
                                 {/* Capa táctil cuando la tarjeta está inactiva para centrarla al tocarla */}
-                                {activeIndex !== 0 && (
+                                {activeIndex !== 1 && (
                                     <TouchableOpacity
                                         style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
                                         activeOpacity={0.8}
-                                        onPress={() => scrollToIndex(0)}
+                                        onPress={() => scrollToIndex(1)}
                                     />
                                 )}
                             </Animated.View>
@@ -275,8 +329,8 @@ export const RegisterScreen: React.FC = () => {
                                     {
                                         borderColor: colors.success,
                                         backgroundColor: colors.surface,
-                                        transform: [{ scale: card1Scale }],
-                                        opacity: card1Opacity,
+                                        transform: [{ scale: card2Scale }],
+                                        opacity: card2Opacity,
                                     }
                                 ]}
                             >
@@ -328,11 +382,11 @@ export const RegisterScreen: React.FC = () => {
                                 </TouchableOpacity>
 
                                 {/* Capa táctil cuando la tarjeta está inactiva para centrarla al tocarla */}
-                                {activeIndex !== 1 && (
+                                {activeIndex !== 2 && (
                                     <TouchableOpacity
                                         style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
                                         activeOpacity={0.8}
-                                        onPress={() => scrollToIndex(1)}
+                                        onPress={() => scrollToIndex(2)}
                                     />
                                 )}
                             </Animated.View>
@@ -431,6 +485,30 @@ const styles = StyleSheet.create({
     },
     cardSlide: {
         justifyContent: 'center',
+    },
+    historyCard: {
+        borderRadius: 16,
+        borderWidth: 2.5,
+        borderColor: '#C4C4C4',
+        backgroundColor: '#EFEFEF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+        elevation: 2,
+        overflow: 'hidden',
+    },
+    historyCardTouchable: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+    },
+    historyCardTitle: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#000000',
+        textAlign: 'center',
     },
     card: {
         borderRadius: 16,

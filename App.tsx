@@ -5,24 +5,33 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { FinanceProvider } from './src/context/FinanceContext';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
+import { HistoryScreen } from './src/screens/HistoryScreen';
 import { BearButton } from './src/components/BearButton';
 
 const MainApp = () => {
-  const [currentView, setCurrentView] = useState<'register' | 'dashboard'>('register');
+  const [currentView, setCurrentView] = useState<'register' | 'dashboard' | 'history'>('register');
 
   const toggleView = () => {
-    setCurrentView(prev => prev === 'register' ? 'dashboard' : 'register');
+    setCurrentView(prev => prev === 'dashboard' ? 'register' : 'dashboard');
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {currentView === 'register' ? (
+      {currentView === 'register' && (
         <Animated.View style={styles.fullScreen} entering={FadeIn} exiting={FadeOut}>
-          <RegisterScreen />
+          <RegisterScreen onOpenHistory={() => setCurrentView('history')} />
         </Animated.View>
-      ) : (
+      )}
+
+      {currentView === 'history' && (
+        <Animated.View style={styles.fullScreen} entering={FadeIn} exiting={FadeOut}>
+          <HistoryScreen onBack={() => setCurrentView('register')} />
+        </Animated.View>
+      )}
+
+      {currentView === 'dashboard' && (
         <Animated.View style={styles.fullScreen} entering={FadeIn} exiting={FadeOut}>
           <DashboardScreen />
         </Animated.View>

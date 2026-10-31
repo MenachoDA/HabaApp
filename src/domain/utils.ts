@@ -27,6 +27,64 @@ export const groupExpensesByDay = (transactions: Transaction[]) => {
     return grouped;
 };
 
+export const MONTH_NAMES_ES = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+];
+
+export const formatDateHeader = (dateKey: string): string => {
+    const parts = dateKey.split('-');
+    if (parts.length !== 3) return dateKey;
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const monthName = MONTH_NAMES_ES[monthIndex] || parts[1];
+    return `${day} de ${monthName} ${year}`;
+};
+
+export const formatDateTimeDisplay = (timestamp: string): string => {
+    const [datePart, timePart] = timestamp.split('T');
+    const formattedDate = formatDateHeader(datePart || '');
+    const hhmm = timePart ? timePart.slice(0, 5) : '00:00';
+    return `${formattedDate} - ${hhmm}`;
+};
+
+export interface DayTransactionGroup {
+    dateKey: string;
+    label: string;
+    transactions: Transaction[];
+}
+
+export const groupTransactionsByDay = (transactions: Transaction[]): DayTransactionGroup[] => {
+    const map: Record<string, Transaction[]> = {};
+
+    transactions.forEach(tx => {
+        const dateKey = tx.timestamp.split('T')[0] || '0000-00-00';
+        if (!map[dateKey]) {
+            map[dateKey] = [];
+        }
+        map[dateKey].push(tx);
+    });
+
+    const sortedKeys = Object.keys(map).sort((a, b) => b.localeCompare(a));
+
+    return sortedKeys.map(dateKey => ({
+        dateKey,
+        label: formatDateHeader(dateKey),
+        transactions: map[dateKey].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+    }));
+};
+
 export const getLocalISOTime = (): string => {
     const now = new Date();
     const offset = now.getTimezoneOffset();
