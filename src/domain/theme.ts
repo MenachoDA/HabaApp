@@ -3,6 +3,7 @@ export interface ThemeColors {
     surface: string;
     primary: string;
     success: string;
+    fail: string;
     textMain: string;
     textSecondary: string;
     border: string;
@@ -19,6 +20,7 @@ export class LightThemeStrategy implements IThemeStrategy {
             surface: '#FFFFFF',
             primary: '#5C5AE8', // Morado Haba
             success: '#10B981', // Verde Menta
+            fail: '#E9040D', // Rojo
             textMain: '#1F2937',
             textSecondary: '#6B7280',
             border: '#E5E7EB',
@@ -33,6 +35,7 @@ export class DarkThemeStrategy implements IThemeStrategy {
             surface: '#1F2937',
             primary: '#8B5CF6',
             success: '#34D399',
+            fail: '#E9040D',
             textMain: '#F9FAFB',
             textSecondary: '#9CA3AF',
             border: '#374151',

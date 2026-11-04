@@ -49,7 +49,7 @@ export const DashboardScreen: React.FC = () => {
                     <View style={[styles.balanceBar, { backgroundColor: colors.success, flex: totalIncome || 1 }]} />
                     <View style={[styles.balanceBar, { backgroundColor: colors.primary, flex: totalExpense || 0 }]} />
                 </View>
-                <Text style={{ textAlign: 'center', marginTop: 8, color: balance >= 0 ? colors.success : colors.primary, fontWeight: 'bold' }}>
+                <Text style={{ textAlign: 'center', marginTop: 8, color: balance >= 0 ? colors.success : colors.fail, fontWeight: 'bold' }}>
                     Balance: S/{balance.toFixed(2)}
                 </Text>
             </View>
