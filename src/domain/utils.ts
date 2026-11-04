@@ -42,6 +42,90 @@ export const MONTH_NAMES_ES = [
     'Diciembre',
 ];
 
+export const getMonthKeyFromTimestamp = (timestamp: string): string => {
+    const datePart = timestamp.split('T')[0] || '';
+    const parts = datePart.split('-');
+    if (parts.length < 2) return '';
+    const year = parts[0];
+    const month = parts[1].padStart(2, '0');
+    return `${year}-${month}`;
+};
+
+export const getCurrentMonthKey = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+};
+
+export const formatMonthYear = (monthKey: string): string => {
+    const parts = monthKey.split('-');
+    if (parts.length < 2) return monthKey;
+    const year = parts[0];
+    const monthIndex = parseInt(parts[1], 10) - 1;
+    const monthName = MONTH_NAMES_ES[monthIndex] || parts[1];
+    return `${monthName} ${year}`;
+};
+
+export const getAvailableMonths = (
+    transactions: Transaction[],
+    currentMonthKey: string = getCurrentMonthKey()
+): string[] => {
+    const monthSet = new Set<string>([currentMonthKey]);
+    transactions.forEach(tx => {
+        const key = getMonthKeyFromTimestamp(tx.timestamp);
+        if (key) {
+            monthSet.add(key);
+        }
+    });
+    return Array.from(monthSet).sort((a, b) => a.localeCompare(b));
+};
+
+export const filterTransactionsByMonth = (
+    transactions: Transaction[],
+    monthKey: string
+): Transaction[] => {
+    return transactions.filter(tx => getMonthKeyFromTimestamp(tx.timestamp) === monthKey);
+};
+
+export const calculateBalanceIncomeForMonth = (
+    transactions: Transaction[],
+    monthKey: string
+): number => {
+    const parts = monthKey.split('-');
+    if (parts.length < 2) return 0;
+    const selectedYear = parseInt(parts[0], 10);
+    const selectedMonth = parseInt(parts[1], 10);
+    if (isNaN(selectedYear) || isNaN(selectedMonth)) return 0;
+
+    const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+    const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const daysInPrevMonth = new Date(prevYear, prevMonth, 0).getDate();
+    const minPrevMonthDay = daysInPrevMonth - 2;
+
+    return transactions
+        .filter(tx => {
+            if (tx.type !== 'income') return false;
+            const datePart = tx.timestamp.split('T')[0] || '';
+            const dateParts = datePart.split('-');
+            if (dateParts.length !== 3) return false;
+
+            const txYear = parseInt(dateParts[0], 10);
+            const txMonth = parseInt(dateParts[1], 10);
+            const txDay = parseInt(dateParts[2], 10);
+
+            const isSelectedMonth = txYear === selectedYear && txMonth === selectedMonth;
+            const isLastThreeDaysOfPrevMonth =
+                txYear === prevYear &&
+                txMonth === prevMonth &&
+                txDay >= minPrevMonthDay &&
+                txDay <= daysInPrevMonth;
+
+            return isSelectedMonth || isLastThreeDaysOfPrevMonth;
+        })
+        .reduce((acc, curr) => acc + curr.amount, 0);
+};
+
 export const formatDateHeader = (dateKey: string): string => {
     const parts = dateKey.split('-');
     if (parts.length !== 3) return dateKey;
