@@ -23,6 +23,7 @@ export const DashboardScreen: React.FC = () => {
 
     const currentMonthKey = getCurrentMonthKey();
     const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
     const [dropdownTop, setDropdownTop] = useState<number>(48);
 
@@ -43,7 +44,44 @@ export const DashboardScreen: React.FC = () => {
         [transactions, selectedMonth]
     );
 
-    const totalExpense = useMemo(
+    // Gastos por categoría del mes seleccionado (alimenta el PieChart/DonutChart)
+    const expensesByCategory = useMemo(
+        () => groupExpensesByCategory(monthTransactions),
+        [monthTransactions]
+    );
+
+    // Si cambia el mes o la categoría seleccionada ya no tiene datos en el mes actual, limpiar filtro de categoría
+    useEffect(() => {
+        if (selectedCategory && !expensesByCategory[selectedCategory]) {
+            setSelectedCategory(null);
+        }
+    }, [expensesByCategory, selectedCategory]);
+
+    const handleSelectCategory = (category: string) => {
+        setSelectedCategory(prev => (prev === category ? null : category));
+    };
+
+    // Transacciones filtradas por la categoría seleccionada (para Gasto por Día y Gasto Total mostrado)
+    const filteredExpenseTransactions = useMemo(
+        () =>
+            selectedCategory
+                ? monthTransactions.filter(tx => tx.type === 'expense' && tx.category === selectedCategory)
+                : monthTransactions,
+        [monthTransactions, selectedCategory]
+    );
+
+    const displayedExpenseTotal = useMemo(
+        () => calculateTotal(filteredExpenseTransactions, 'expense'),
+        [filteredExpenseTransactions]
+    );
+
+    const expensesByDay = useMemo(
+        () => groupExpensesByDay(filteredExpenseTransactions),
+        [filteredExpenseTransactions]
+    );
+
+    // El Balance Mensual NO se ve afectado por la categoría seleccionada
+    const totalMonthExpense = useMemo(
         () => calculateTotal(monthTransactions, 'expense'),
         [monthTransactions]
     );
@@ -54,17 +92,7 @@ export const DashboardScreen: React.FC = () => {
         [transactions, selectedMonth]
     );
 
-    const balance = totalIncome - totalExpense;
-
-    const expensesByCategory = useMemo(
-        () => groupExpensesByCategory(monthTransactions),
-        [monthTransactions]
-    );
-
-    const expensesByDay = useMemo(
-        () => groupExpensesByDay(monthTransactions),
-        [monthTransactions]
-    );
+    const balance = totalIncome - totalMonthExpense;
 
     return (
         <ScrollView
@@ -97,22 +125,30 @@ export const DashboardScreen: React.FC = () => {
 
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
                 <View style={styles.headersummary}>
-                    <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Gasto por Día</Text>
-                    <Text style={[styles.summaryValue, { color: colors.textMain }]}>Gasto Total: S/{totalExpense.toFixed(2)}</Text>
+                    <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>
+                        {selectedCategory ? `Gasto por Día (${selectedCategory})` : 'Gasto por Día'}
+                    </Text>
+                    <Text style={[styles.summaryValue, { color: colors.textMain }]}>
+                        Gasto Total: S/{displayedExpenseTotal.toFixed(2)}
+                    </Text>
                 </View>
                 <BarChart data={expensesByDay} />
             </View>
 
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Gasto por Categoría</Text>
-                <DonutChart data={expensesByCategory} />
+                <DonutChart
+                    data={expensesByCategory}
+                    selectedCategory={selectedCategory}
+                    onSelectCategory={handleSelectCategory}
+                />
             </View>
 
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Balance Mensual</Text>
                 <View style={styles.balanceBarContainer}>
                     <View style={[styles.balanceBar, { backgroundColor: colors.success, flex: totalIncome || 1 }]} />
-                    <View style={[styles.balanceBar, { backgroundColor: colors.primary, flex: totalExpense || 0 }]} />
+                    <View style={[styles.balanceBar, { backgroundColor: colors.primary, flex: totalMonthExpense || 0 }]} />
                 </View>
                 <Text style={{ textAlign: 'center', marginTop: 8, color: balance >= 0 ? colors.success : colors.fail, fontWeight: 'bold' }}>
                     Balance: S/{balance.toFixed(2)}
@@ -160,6 +196,7 @@ export const DashboardScreen: React.FC = () => {
                                         activeOpacity={0.7}
                                         onPress={() => {
                                             setSelectedMonth(monthKey);
+                                            setSelectedCategory(null);
                                             setIsMenuOpen(false);
                                         }}
                                     >
