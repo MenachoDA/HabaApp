@@ -11,6 +11,6 @@ export interface Transaction {
     synced: boolean;
 }
 
-export const EXPENSE_CATEGORIES = ['Comida', 'Servicios', 'Movilidad', 'Otros', 'Carro', 'Regalos'];
+export const EXPENSE_CATEGORIES = ['Comida', 'Servicios', 'Movilidad'];
 export const EXPENSE_SOURCES = ['Débito', 'Crédito', 'Efectivo'];
-export const INCOME_ORIGINS = ['Trabajo', 'Mesada', 'Negocio'];
+export const INCOME_ORIGINS = ['Trabajo'];
