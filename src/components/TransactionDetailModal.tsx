@@ -74,7 +74,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         if (transaction) {
             setAmountStr(transaction.amount.toFixed(2));
             setCategoryVal(transaction.category);
-            setSourceVal(transaction.source || (transaction.type === 'income' ? (sources[0] || 'Efectivo') : (sources[0] || 'Débito')));
+            setSourceVal(transaction.type === 'income' ? '' : (transaction.source || sources[0] || 'Débito'));
             setDescVal(transaction.description || '');
             setTimestampVal(transaction.timestamp);
 
@@ -179,7 +179,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
         await onSave(transaction.id, {
             amount: parsedAmount,
             category: trimmedCategory,
-            source: trimmedSource || transaction.source,
+            source: isIncome ? undefined : (trimmedSource || transaction.source),
             timestamp: finalTimestamp,
             description: descVal.trim(),
         });
@@ -295,8 +295,10 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                                 </TouchableOpacity>
                             )}
 
-                            {/* 2. CATEGORÍA */}
-                            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Categoría</Text>
+                            {/* 2. CATEGORÍA (Gasto) / ORIGEN (Ingreso) */}
+                            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                                {isIncome ? 'Origen' : 'Categoría'}
+                            </Text>
                             {editingField === 'category' ? (
                                 <View style={[styles.expandedEditBox, { borderColor: accentColor, backgroundColor: colors.background }]}>
                                     <View style={styles.chipsWrap}>
@@ -330,7 +332,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                                             style={[styles.editInput, { color: colors.textMain, borderBottomWidth: 1, borderBottomColor: colors.border }]}
                                             value={categoryVal}
                                             onChangeText={setCategoryVal}
-                                            placeholder="Escribir categoría..."
+                                            placeholder={isIncome ? 'Escribir origen...' : 'Escribir categoría...'}
                                             placeholderTextColor="#9CA3AF"
                                             returnKeyType="done"
                                             onSubmitEditing={() => saveSingleField('category')}
@@ -364,73 +366,77 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                                 </TouchableOpacity>
                             )}
 
-                            {/* 3. FUENTE / MEDIO DE PAGO */}
-                            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Fuente / Medio de pago</Text>
-                            {editingField === 'source' ? (
-                                <View style={[styles.expandedEditBox, { borderColor: accentColor, backgroundColor: colors.background }]}>
-                                    <View style={styles.chipsWrap}>
-                                        {sources.map((option) => {
-                                            const selected = sourceVal === option;
-                                            return (
-                                                <TouchableOpacity
-                                                    key={option}
-                                                    style={[
-                                                        styles.optionChip,
-                                                        {
-                                                            borderColor: selected ? accentColor : colors.border,
-                                                            backgroundColor: selected ? accentColor : colors.surface,
-                                                        },
-                                                    ]}
-                                                    onPress={async () => {
-                                                        setSourceVal(option);
-                                                        await onSave(transaction.id, { source: option });
-                                                        setEditingField(null);
-                                                    }}
-                                                >
-                                                    <Text style={[styles.optionChipText, { color: selected ? '#FFFFFF' : colors.textMain }]}>
-                                                        {option}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            );
-                                        })}
-                                    </View>
-                                    <View style={styles.inlineInputRow}>
-                                        <TextInput
-                                            style={[styles.editInput, { color: colors.textMain, borderBottomWidth: 1, borderBottomColor: colors.border }]}
-                                            value={sourceVal}
-                                            onChangeText={setSourceVal}
-                                            placeholder="Escribir fuente o medio de pago..."
-                                            placeholderTextColor="#9CA3AF"
-                                            returnKeyType="done"
-                                            onSubmitEditing={() => saveSingleField('source')}
-                                        />
-                                        <View style={styles.itemActions}>
-                                            <TouchableOpacity
-                                                style={[styles.actionIconBtn, { backgroundColor: accentColor }]}
-                                                onPress={() => saveSingleField('source')}
-                                            >
-                                                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.actionIconBtn, { backgroundColor: '#9CA3AF' }]}
-                                                onPress={() => cancelFieldEdit('source')}
-                                            >
-                                                <Ionicons name="close" size={18} color="#FFFFFF" />
-                                            </TouchableOpacity>
+                            {/* 3. FUENTE / MEDIO DE PAGO (Solo para Gastos) */}
+                            {!isIncome && (
+                                <>
+                                    <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Fuente / Medio de pago</Text>
+                                    {editingField === 'source' ? (
+                                        <View style={[styles.expandedEditBox, { borderColor: accentColor, backgroundColor: colors.background }]}>
+                                            <View style={styles.chipsWrap}>
+                                                {sources.map((option) => {
+                                                    const selected = sourceVal === option;
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={option}
+                                                            style={[
+                                                                styles.optionChip,
+                                                                {
+                                                                    borderColor: selected ? accentColor : colors.border,
+                                                                    backgroundColor: selected ? accentColor : colors.surface,
+                                                                },
+                                                            ]}
+                                                            onPress={async () => {
+                                                                setSourceVal(option);
+                                                                await onSave(transaction.id, { source: option });
+                                                                setEditingField(null);
+                                                            }}
+                                                        >
+                                                            <Text style={[styles.optionChipText, { color: selected ? '#FFFFFF' : colors.textMain }]}>
+                                                                {option}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </View>
+                                            <View style={styles.inlineInputRow}>
+                                                <TextInput
+                                                    style={[styles.editInput, { color: colors.textMain, borderBottomWidth: 1, borderBottomColor: colors.border }]}
+                                                    value={sourceVal}
+                                                    onChangeText={setSourceVal}
+                                                    placeholder="Escribir fuente o medio de pago..."
+                                                    placeholderTextColor="#9CA3AF"
+                                                    returnKeyType="done"
+                                                    onSubmitEditing={() => saveSingleField('source')}
+                                                />
+                                                <View style={styles.itemActions}>
+                                                    <TouchableOpacity
+                                                        style={[styles.actionIconBtn, { backgroundColor: accentColor }]}
+                                                        onPress={() => saveSingleField('source')}
+                                                    >
+                                                        <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        style={[styles.actionIconBtn, { backgroundColor: '#9CA3AF' }]}
+                                                        onPress={() => cancelFieldEdit('source')}
+                                                    >
+                                                        <Ionicons name="close" size={18} color="#FFFFFF" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
                                         </View>
-                                    </View>
-                                </View>
-                            ) : (
-                                <TouchableOpacity
-                                    style={[styles.itemRow, { borderColor: colors.border, backgroundColor: colors.background }]}
-                                    onPress={() => setEditingField('source')}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[styles.itemText, { color: colors.textMain }]}>
-                                        {transaction.source || sourceVal || '—'}
-                                    </Text>
-                                    <Ionicons name="pencil-outline" size={18} color={accentColor} />
-                                </TouchableOpacity>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={[styles.itemRow, { borderColor: colors.border, backgroundColor: colors.background }]}
+                                            onPress={() => setEditingField('source')}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={[styles.itemText, { color: colors.textMain }]}>
+                                                {transaction.source || sourceVal || '—'}
+                                            </Text>
+                                            <Ionicons name="pencil-outline" size={18} color={accentColor} />
+                                        </TouchableOpacity>
+                                    )}
+                                </>
                             )}
 
                             {/* 4. FECHA Y HORA */}

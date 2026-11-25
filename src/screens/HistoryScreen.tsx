@@ -81,7 +81,7 @@ export const HistoryScreen: React.FC<HistoryScreenProps> = ({ onBack }) => {
                                     const isIncome = tx.type === 'income';
                                     const rowTextColor = isIncome ? colors.success : colors.textMain;
                                     const isLast = idx === group.transactions.length - 1;
-                                    const paymentOrSource = tx.source || (isIncome ? 'Ingreso' : '—');
+                                    const paymentOrSource = isIncome ? 'Ingreso' : (tx.source || '—');
 
                                     return (
                                         <TouchableOpacity
